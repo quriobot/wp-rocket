@@ -653,6 +653,7 @@ class Combine extends AbstractJSOptimization implements ProcessorInterface {
 			'cdn.jst.ai',
 			'w2dc_fields_in_categories',
 			'aepc_pixel',
+			'jrRelatedWidgets',
 		];
 
 		$excluded_inline = array_merge( $defaults, $this->options->get( 'exclude_inline_js', [] ) );
