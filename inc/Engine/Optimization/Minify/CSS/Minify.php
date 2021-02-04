@@ -310,7 +310,8 @@ class Minify extends AbstractCSSOptimization implements ProcessorInterface {
 	 */
 	protected function minify( $file_path, $minified_file, $file_content ) {
 		$file_content     = $this->rewrite_paths( $file_path, $minified_file, $file_content );
-		$minifier         = $this->get_minifier( $file_content );
+		$minifier         = $this->get_minifier();
+		$minifier->addData( $file_path, $file_content );
 		$minified_content = $minifier->minify();
 
 		if ( empty( $minified_content ) ) {
@@ -337,7 +338,7 @@ class Minify extends AbstractCSSOptimization implements ProcessorInterface {
 	 *
 	 * @return Minifier\CSS
 	 */
-	protected function get_minifier( $file_content ) {
-		return new Minifier\CSS( $file_content );
+	protected function get_minifier() {
+		return new Minifier\CSS();
 	}
 }

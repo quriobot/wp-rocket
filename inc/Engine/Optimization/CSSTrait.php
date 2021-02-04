@@ -107,28 +107,6 @@ trait CSSTrait {
 			\)
 
 			/ix',
-
-			// @import "xxx"
-			'/
-			# import statement
-			@import
-
-			# whitespace
-			\s+
-
-				# we don\'t have to check for @import url(), because the
-				# condition above will already catch these
-
-				# open path enclosure
-				(?P<quotes>["\'])
-
-					# fetch path
-					(?P<path>.+?)
-
-				# close path enclosure
-				(?P=quotes)
-
-			/ix',
 		];
 
 		// find all relative urls in css.

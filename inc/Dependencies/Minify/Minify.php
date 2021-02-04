@@ -105,7 +105,7 @@ abstract class Minify
 	 * @param string|string[] $data
 	 *
 	 * @return static
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	public function addFile($data /* $data = null, ... */)
@@ -135,6 +135,10 @@ abstract class Minify
 		}
 
 		return $this;
+	}
+
+	public function addData( $path, $content ) {
+		$this->data[ $path ] = $content;
 	}
 
 	/**
