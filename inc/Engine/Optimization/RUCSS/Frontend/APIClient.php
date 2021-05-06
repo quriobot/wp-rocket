@@ -59,6 +59,8 @@ class APIClient extends AbstractAPIClient {
 			'message'         => $result['message'],
 			'css'             => $result['contents']['shakedCSS'],
 			'unprocessed_css' => ( is_array( $result['contents']['unProcessedCss'] ) ? $result['contents']['unProcessedCss'] : [] ),
+			'CSSParserVer' => $result['contents']['CSSParserVer'],
+			'JSParserVer' => $result['contents']['JSParserVer'],
 		];
 	}
 }

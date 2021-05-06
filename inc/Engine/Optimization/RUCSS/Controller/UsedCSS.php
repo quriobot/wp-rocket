@@ -74,6 +74,13 @@ class UsedCSS {
 	private $base_url;
 
 	/**
+	 * Flags for whether resources need to be re-queued for pre-warmup.
+	 *
+	 * @var array
+	 */
+	private $needs_requeue = [];
+
+	/**
 	 * Instantiate the class.
 	 *
 	 * @param Options_Data   $options         Options instance.
@@ -189,6 +196,20 @@ class UsedCSS {
 				return $html;
 			}
 
+			if ( ! $this->check_parser_version( $treeshaked_result, 'css' ) ) {
+				$this->needs_requeue['css'] = true;
+			}
+
+			if ( ! $this->check_parser_version( $treeshaked_result, 'js') ) {
+				$this->needs_requeue['js'] = true;
+			}
+
+			if ( ! empty( $this->needs_requeue ) ) {
+				$this->send_prewarmup( $this->needs_requeue );
+
+				return $html;
+			}
+
 			$retries = 0;
 			if ( isset( $used_css->retries ) ) {
 				$retries = $used_css->retries;
@@ -225,6 +246,53 @@ class UsedCSS {
 		$this->update_last_accessed( (int) $used_css->id );
 
 		return $html;
+	}
+
+	/**
+	 * Check for any parser version updates on SaaS.
+	 *
+	 * @since 3.9
+	 *
+	 * @param array treeshaked_result Treeshaker results.
+	 * @param string $parser_type Which parser version to check: 'css' | 'js'
+	 *
+	 * @return bool False when parser versions don't match.
+	 */
+	private function check_parser_version( $treeshaked_result, $parser_type ) {
+		$saas_parser_ver = 'css' === $parser_type ? 'CSSParserVer' : 'JSParserVer';
+
+		// If we didn't get a parser version from SaaS, nothing to check.
+		if ( false === $treeshaked_result[$saas_parser_ver] ) {
+			return true;
+		}
+
+		$option_setting = 'css' === $parser_type
+			? $this->options->get( 'css_parser_version' )
+			: $this->options->get( 'js_parser_version' );
+
+		// If we don't have an option setting for this, set it now, but we can't check yet.
+		if ( ! $option_setting ) {
+			$this->options->set( $option_setting, $treeshaked_result[$saas_parser_ver] );
+
+			return true;
+		}
+
+		// We have a SaaS response and a stored version - we can check now.
+		return $option_setting === $treeshaked_result[$saas_parser_ver];
+	}
+
+	/**
+	 * Send resources back for pre-warmup.
+	 *
+	 * @since 3.9
+	 *
+	 * @param array $resources_to_send Which resources we need to send.
+	 *                                 Can set either or both 'css' and 'js' keys => true to send that type.
+	 *
+	 * @return void
+	 */
+	private function send_prewarmup( array $resources_to_send ) {
+		// Drop the appropriate resources and requeue for pre-warmup.
 	}
 
 	/**
