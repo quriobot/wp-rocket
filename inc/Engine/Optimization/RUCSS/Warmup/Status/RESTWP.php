@@ -49,6 +49,8 @@ class RESTWP {
 	 */
 	private $options_api;
 
+	private $status_checker;
+
 	/**
 	 * RESTWP constructor.
 	 *
@@ -58,10 +60,11 @@ class RESTWP {
 	 * @param ResourcesQuery $resources_query Resources Query instance.
 	 * @param Options        $options_api Options API instance.
 	 */
-	public function __construct( Options_Data $options, ResourcesQuery $resources_query, Options $options_api ) {
+	public function __construct( Options_Data $options, ResourcesQuery $resources_query, Options $options_api, Checker $status_checker ) {
 		$this->options         = $options;
 		$this->resources_query = $resources_query;
 		$this->options_api     = $options_api;
+		$this->status_checker  = $status_checker;
 	}
 
 	/**
@@ -112,13 +115,13 @@ class RESTWP {
 
 		$allow_optimization = $request->get_param( 'allow_optimization' );
 		if ( isset( $allow_optimization ) ) {
-			$this->set_allow_optimization();
+			$this->status_checker->finish_prewarmup();
 		}
 
 		$output = [
 			'scan_status'        => $this->get_scan_status( $resources_scanner_option ),
 			'warmup_status'      => $this->get_warmup_status(),
-			'allow_optimization' => $this->get_allow_optimization(),
+			'allow_optimization' => $this->status_checker->is_prewarmup_finished(),
 		];
 
 		return rest_ensure_response(
@@ -161,27 +164,6 @@ class RESTWP {
 		];
 	}
 
-	/**
-	 * Get allow RUCSS optimization.
-	 *
-	 * @return boolean
-	 */
-	private function get_allow_optimization(): bool {
-		$prewarmup_stats = $this->options_api->get( 'prewarmup_stats', [] );
-		return (bool) $prewarmup_stats['allow_optimization'];
-	}
-
-	/**
-	 * Set allow RUCSS optimization.
-	 *
-	 * @return void
-	 */
-	private function set_allow_optimization() {
-		$prewarmup_stats                              = $this->options_api->get( 'prewarmup_stats', [] );
-		$prewarmup_stats['allow_optimization']        = true;
-		$prewarmup_stats['warmup_status_finish_time'] = time();
-		$this->options_api->set( 'prewarmup_stats', $prewarmup_stats );
-	}
 	/**
 	 * Get scan status array based on the passed option array.
 	 *

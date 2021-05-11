@@ -166,4 +166,13 @@ class Scanner {
 			];
 		}
 	}
+
+	public function clear_on_disable_option( $old_value, $value ) {
+		if ( 0 !== (int) $value['remove_unused_css'] || 1 !== (int) $old_value['remove_unused_css'] ) {
+			return;
+		}
+
+		$this->options_api->delete( 'resources_scanner' );
+		$this->options_api->delete( 'prewarmup_stats' );
+	}
 }

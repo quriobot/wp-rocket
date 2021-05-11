@@ -53,10 +53,6 @@ class Checker extends AbstractAPIClient {
 	public function check_warmup_status() {
 		$prewarmup_stats = $this->options_api->get( 'prewarmup_stats', [] );
 
-		if ( empty( $prewarmup_stats['fetch_finish_time'] ) ) {
-			return;
-		}
-
 		if ( time() > strtotime( '+1 hour', (int) $prewarmup_stats['scan_start_time'] ) ) {
 			/**
 			 * Fires this action when the prewarmup lifespan is expired
@@ -65,7 +61,7 @@ class Checker extends AbstractAPIClient {
 			 */
 			do_action( 'rocket_rucss_prewarmup_error' );
 
-			$this->set_warmup_status_finish_time();
+			$this->finish_prewarmup();
 			return;
 		}
 
@@ -79,11 +75,16 @@ class Checker extends AbstractAPIClient {
 			 */
 			do_action( 'rocket_rucss_prewarmup_success' );
 
-			$this->set_warmup_status_finish_time();
-			$this->set_warmup_force_optimization();
+			$this->finish_prewarmup();
 
 			rocket_clean_domain();
+		}
+	}
 
+	public function refresh_resources_status() {
+		$items = $this->resources_query->get_waiting_prewarmup_items();
+
+		if ( empty( $items ) ) {
 			return;
 		}
 
@@ -214,11 +215,23 @@ class Checker extends AbstractAPIClient {
 	}
 
 	/**
-	 * Set warmup force optimization.
+	 * Finish prewarmup process by setting warmup force optimization and finish time.
 	 */
-	private function set_warmup_force_optimization() {
-		$prewarmup_stats                       = $this->options_api->get( 'prewarmup_stats', [] );
-		$prewarmup_stats['allow_optimization'] = true;
+	public function finish_prewarmup() {
+		$prewarmup_stats                              = $this->options_api->get( 'prewarmup_stats', [] );
+
+		if ( empty( $prewarmup_stats['scan_start_time'] ) ) {
+			return;
+		}
+
+		$prewarmup_stats['allow_optimization']        = true;
+		$prewarmup_stats['warmup_status_finish_time'] = time();
+
 		$this->options_api->set( 'prewarmup_stats', $prewarmup_stats );
+	}
+
+	public function is_prewarmup_finished() {
+		$prewarmup_stats = $this->options_api->get( 'prewarmup_stats', [] );
+		return (bool) $prewarmup_stats['allow_optimization'];
 	}
 }

@@ -71,12 +71,19 @@ class Subscriber implements Subscriber_Interface {
 		return [
 			'rocket_buffer'                  => [ 'collect_resources', 11 ],
 			'rest_api_init'                  => 'register_routes',
-			'init'                           => 'check_warmup_status',
+			'init'                           => [
+				[ 'check_warmup_status' ],
+				[ 'refresh_prewarmup_resources_status' ]
+			],
 			'admin_notices'                  => 'prewarmup_result_notice',
 			'rocket_rucss_prewarmup_error'   => 'prepare_error_notice',
 			'rocket_rucss_prewarmup_success' => 'prepare_success_notice',
 			// The following priority should be less than 10.
-			'update_option_' . rocket_get_constant( 'WP_ROCKET_SLUG' ) => [ 'start_scanner', 9, 2 ],
+			'update_option_' . rocket_get_constant( 'WP_ROCKET_SLUG' ) =>
+				[
+					[ 'clear_prewarmup_when_disable_rucss', 10, 2 ],
+					[ 'start_scanner', 9, 2 ],
+				],
 		];
 	}
 
@@ -125,12 +132,23 @@ class Subscriber implements Subscriber_Interface {
 			return;
 		}
 
-		$prewarmup_stats = get_option( 'wp_rocket_prewarmup_stats', [] );
-		if ( empty( $prewarmup_stats ) || empty( $prewarmup_stats['fetch_finish_time'] ) ) {
+		if ( $this->status_checker->is_prewarmup_finished() ) {
 			return;
 		}
 
 		$this->status_checker->check_warmup_status();
+	}
+
+	public function refresh_prewarmup_resources_status() {
+		if ( ! (bool) $this->options->get( 'remove_unused_css', 0 ) ) {
+			return;
+		}
+
+		if ( $this->status_checker->is_prewarmup_finished() ) {
+			return;
+		}
+
+		$this->status_checker->refresh_resources_status();
 	}
 
 	/**
@@ -220,6 +238,10 @@ class Subscriber implements Subscriber_Interface {
 	 */
 	public function register_routes() {
 		$this->restwp->register_status_route();
+	}
+
+	public function clear_prewarmup_when_disable_rucss( $old_value, $value ) {
+		$this->scanner->clear_on_disable_option( $old_value, $value );
 	}
 
 }
